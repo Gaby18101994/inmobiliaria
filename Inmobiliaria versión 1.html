@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendar Cita Inmobiliaria</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .calendar-container {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .calendar-header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .calendar-header button {
+            padding: 8px 15px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .day {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+            cursor: pointer;
+        }
+        .day.selected {
+            background-color: #007bff;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        select,
+        input[type="time"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button[type="submit"] {
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button[type="submit"]:hover {
+            background-color: #218838;
+        }
+        #appointment-details {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        #appointment-details h3 {
+            color: #333;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Agendar Cita Inmobiliaria</h2>
+
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <button id="prevMonth">Anterior</button>
+                <h3 id="currentMonth"></h3>
+                <button id="nextMonth">Siguiente</button>
+            </div>
+            <div id="calendar-days"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="appointmentTime">Hora de la Cita:</label>
+            <select id="appointmentTime">
+                <option value="09:00">09:00</option>
+                <option value="10:00">10:00</option>
+                <option value="11:00">11:00</option>
+                <option value="12:00">12:00</option>
+                <option value="14:00">14:00</option>
+                <option value="15:00">15:00</option>
+                <option value="16:00">16:00</option>
+                <option value="17:00">17:00</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="appointmentType">Tipo de Cita:</label>
+            <select id="appointmentType">
+                <option value="visita">Visita a Propiedad</option>
+                <option value="asesoria">Asesoría Inmobiliaria</option>
+            </select>
+        </div>
+
+        <button type="submit" onclick="showConfirmation()">Agendar Cita</button>
+
+        <div id="appointment-details" style="display: none;">
+            <h3>Detalles de su Cita:</h3>
+            <p>Fecha: <span id="selected-date"></span></p>
+            <p>Hora: <span id="selected-time"></span></p>
+            <p>Tipo: <span id="selected-type"></span></p>
+            <p>¡Gracias por agendar!</p>
+        </div>
+    </div>
+
+    <script>
+        const calendarDaysContainer = document.getElementById('calendar-days');
+        const currentMonthDisplay = document.getElementById('currentMonth');
+        const prevMonthButton = document.getElementById('prevMonth');
+        const nextMonthButton = document.getElementById('nextMonth');
+        const appointmentTimeSelect = document.getElementById('appointmentTime');
+        const appointmentTypeSelect = document.getElementById('appointmentType');
+        const appointmentDetailsDiv = document.getElementById('appointment-details');
+        const selectedDateSpan = document.getElementById('selected-date');
+        const selectedTimeSpan = document.getElementById('selected-time');
+        const selectedTypeSpan = document.getElementById('selected-type');
+
+        let currentDate = new Date();
+        let selectedDate = null;
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const firstDayOfMonth = new Date(year, month, 1);
+            const lastDayOfMonth = new Date(year, month + 1, 0);
+            const daysInMonth = lastDayOfMonth.getDate();
+            const dayOfWeekOfFirstDay = firstDayOfMonth.getDay(); // 0 (Domingo) - 6 (Sábado)
+
+            currentMonthDisplay.textContent = new Intl.DateTimeFormat('es-MX', { month: 'long', year: 'numeric' }).format(currentDate);
+            calendarDaysContainer.innerHTML = '';
+
+            // Añadir espacios en blanco al inicio del mes
+            for (let i = 0; i < dayOfWeekOfFirstDay; i++) {
+                const emptyDay = document.createElement('div');
+                calendarDaysContainer.appendChild(emptyDay);
+            }
+
+            // Añadir los días del mes
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.classList.add('day');
+                dayDiv.textContent = day;
+                dayDiv.addEventListener('click', () => {
+                    // Remover la clase 'selected' de cualquier día previamente seleccionado
+                    document.querySelectorAll('.day.selected').forEach(el => el.classList.remove('selected'));
+                    dayDiv.classList.add('selected');
+                    selectedDate = new Date(year, month, day);
+                });
+                calendarDaysContainer.appendChild(dayDiv);
+            }
+        }
+
+        function navigateMonth(offset) {
+            currentDate.setMonth(currentDate.getMonth() + offset);
+            renderCalendar();
+            selectedDate = null; // Resetear la selección al cambiar de mes
+        }
+
+        prevMonthButton.addEventListener('click', () => navigateMonth(-1));
+        nextMonthButton.addEventListener('click', () => navigateMonth(1));
+
+        function showConfirmation() {
+            if (selectedDate) {
+                const formattedDate = new Intl.DateTimeFormat('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }).format(selectedDate);
+                selectedDateSpan.textContent = formattedDate;
+                selectedTimeSpan.textContent = appointmentTimeSelect.value;
+                selectedTypeSpan.textContent = appointmentTypeSelect.value;
+                appointmentDetailsDiv.style.display = 'block';
+            } else {
+                alert('Por favor, selecciona una fecha del calendario.');
+            }
+        }
+
+        renderCalendar(); // Renderizar el calendario al cargar la página
+    </script>
+</body>
+</html>
